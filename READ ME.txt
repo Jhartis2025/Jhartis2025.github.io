@@ -155,10 +155,11 @@ HOW ERRORS + SUCCESS LOOK
     when a message appears.
 
 THINGS TO TRY (each shows a different, specific message)
-  Name:        any name works; type one, delete it, then click away
-               to see the "Enter a name" message
+  Name:        any name works; numbers are blocked. Type a name,
+               delete it, then click away to see the "Enter a name" message
   Email:       leave empty / "ziona" / "ziona@gmail" / "zi ona@gmail.com"
-  Phone:       "70455" / "704abc" / leave it empty (that's fine)
+  Phone:       "70455" / try typing letters (they're blocked) /
+               leave it empty (that's fine)
                (it formats itself: 7045550123 -> (704) 555-0123)
   Password:    "abc" and watch the checklist + strength bar fill in
   Confirm:     type something different / then match it
