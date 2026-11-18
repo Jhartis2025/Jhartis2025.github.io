@@ -1451,14 +1451,45 @@ main{
    ========================================================= */
 
 /* Status line under the heading ("8 results", "Searching...") */
+.results-toolbar{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px 16px;
+    margin:-8px 0 16px;
+}
+
 .results-status{
     display:flex;
     align-items:center;
     gap:8px;
     min-height:20px;
-    margin:-8px 0 16px;
+    margin:0;
     color:var(--text-muted);
     font-size:0.875rem;
+}
+
+.sort-control{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    color:var(--text-muted);
+    font-size:0.875rem;
+}
+
+.sort-select{
+    min-height:var(--tap);
+    padding:8px 12px;
+    border:1px solid var(--border-strong);
+    background:var(--bg);
+    color:var(--text);
+    cursor:pointer;
+}
+
+.sort-select:hover{
+    background:var(--hover);
 }
 
 /* While you type, the current results dim a little so you can tell
@@ -1903,8 +1934,18 @@ html.dark .field.is-valid .field-icon{
 
     <h2 id="results-heading">Products</h2>
 
-    <!-- Status line: "Loading results...", "Searching...", "8 results" -->
-    <p class="results-status" role="status" aria-live="polite"></p>
+    <!-- Status line and sorting control -->
+    <div class="results-toolbar">
+        <p class="results-status" role="status" aria-live="polite"></p>
+        <label class="sort-control" for="results-sort">
+            Sort by
+            <select class="sort-select" id="results-sort">
+                <option value="recommended">Recommended</option>
+                <option value="price-ascending">Price: Low to high</option>
+                <option value="price-descending">Price: High to low</option>
+            </select>
+        </label>
+    </div>
 
     <!-- A11: cards are built by the script from the product catalog,
          so search + categories can filter them in real time -->
@@ -2926,6 +2967,7 @@ const resultsStatus = document.querySelector(".results-status");
 const breadcrumb = document.querySelector(".breadcrumb");
 const emptyState = document.querySelector(".empty-state");
 const loadMoreButton = document.querySelector(".load-more-button");
+const sortSelect = document.querySelector("#results-sort");
 
 const PAGE_SIZE = 8;          /* cards shown before "Load more" */
 const FAKE_FETCH_TIME = 700;  /* pretend network time for loading states */
@@ -2934,6 +2976,7 @@ const TYPING_PAUSE = 250;     /* wait this long after a keystroke to filter */
 let currentQuery = pageParams.get("search") || "";
 let visibleCount = PAGE_SIZE;
 let filterTimer;
+let priceSortOrder = null;
 
 syncSearchBoxes(currentQuery);
 
@@ -2946,6 +2989,16 @@ function setStatus(text, withSpinner = false){
         resultsStatus.append(spinner);
     }
     resultsStatus.append(text);
+}
+
+function getMatchingProducts(){
+    const matches = searchProducts(currentQuery, activeCategory);
+    if(priceSortOrder === "ascending"){
+        matches.sort((a, b) => a.price - b.price);
+    }else if(priceSortOrder === "descending"){
+        matches.sort((a, b) => b.price - a.price);
+    }
+    return matches;
 }
 
 /* Heading, breadcrumb, tab title and URL always match the search */
@@ -3006,7 +3059,7 @@ function showSkeletons(count, message){
 }
 
 function renderResults(){
-    const matches = searchProducts(currentQuery, activeCategory);
+    const matches = getMatchingProducts();
 
     resultsGrid.classList.remove("is-updating");
     resultsGrid.removeAttribute("aria-busy");
@@ -3025,6 +3078,17 @@ function renderResults(){
     setStatus(`${matches.length} ${matches.length === 1 ? "result" : "results"}`);
     loadMoreButton.hidden = matches.length <= visibleCount;
 }
+
+sortSelect.addEventListener("change", () => {
+    if(sortSelect.value === "price-ascending"){
+        priceSortOrder = "ascending";
+    }else if(sortSelect.value === "price-descending"){
+        priceSortOrder = "descending";
+    }else{
+        priceSortOrder = null;
+    }
+    renderResults();
+});
 
 function showEmptyState(){
     const query = currentQuery.trim();
@@ -3073,7 +3137,7 @@ emptyState.querySelector(".empty-clear").addEventListener("click", () => {
 /* Load more: button changes to a spinner + "Loading...", is disabled
    so it can't be double-clicked, and skeleton cards hold the space */
 loadMoreButton.addEventListener("click", () => {
-    const matches = searchProducts(currentQuery, activeCategory);
+    const matches = getMatchingProducts();
     const nextBatch = matches.slice(visibleCount, visibleCount + PAGE_SIZE);
     const skeletons = nextBatch.map(createSkeletonCard);
 
